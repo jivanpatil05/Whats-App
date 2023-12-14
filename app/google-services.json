@@ -1,0 +1,49 @@
+{
+  "project_info": {
+    "project_number": "575292495867",
+    "firebase_url": "https://whatsapp-6404c-default-rtdb.firebaseio.com",
+    "project_id": "whatsapp-6404c",
+    "storage_bucket": "whatsapp-6404c.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:575292495867:android:20d2e3d2fa8d6cab90dd5e",
+        "android_client_info": {
+          "package_name": "com.example.whatsapp"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyALuPTXSx3X2-fmHDAo3Vp97fdOHXzJTcI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:575292495867:android:6cc8f8414d2b877c90dd5e",
+        "android_client_info": {
+          "package_name": "com.example.whatsapp.Activity"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyALuPTXSx3X2-fmHDAo3Vp97fdOHXzJTcI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
