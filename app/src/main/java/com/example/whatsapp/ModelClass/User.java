@@ -6,6 +6,7 @@ public class User {
     private String imageURL;
     private String status;
     private String search;
+
     private String token;
 
 
