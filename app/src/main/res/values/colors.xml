@@ -11,5 +11,8 @@
     <color name="rignt">#a1e6ff</color>
     <color name="black1">#5A9CD6</color>
     <color name="whatsapp">#007F69</color>
+    <color name="black01">#939393</color>
+
+    <color name="my_primary">#FF018786</color>
 
 </resources>

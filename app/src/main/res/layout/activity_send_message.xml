@@ -63,6 +63,7 @@
         android:layout_alignParentBottom="true"
         android:layout_marginStart="2dp"
         android:layout_marginEnd="2dp"
+        android:layout_marginBottom="7dp"
         android:background="@drawable/button_background_blue"
         android:backgroundTint="@color/white"
         android:orientation="horizontal"

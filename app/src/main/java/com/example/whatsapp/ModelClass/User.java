@@ -6,14 +6,16 @@ public class User {
     private String imageURL;
     private String status;
     private String search;
+    private String token;
 
 
-    public User(String id, String username, String imageURL,String status,String search) {
+    public User(String id, String username, String imageURL, String status, String search, String token) {
         this.id = id;
         this.username = username;
         this.imageURL = imageURL;
         this.status = status;
         this.search = search;
+        this.token = token;
     }
 
     public User() {
@@ -57,5 +59,13 @@ public class User {
 
     public void setSearch(String search) {
         this.search = search;
+    }
+
+    public String getToken() {
+        return token;
+    }
+
+    public void setToken(String token) {
+        this.token = token;
     }
 }

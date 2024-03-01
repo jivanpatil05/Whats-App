@@ -80,7 +80,7 @@ public class MessageAdapter extends RecyclerView.Adapter<MessageAdapter.ViewHold
         //share media
         if (chat.getType().equals("text")) {
             holder.show_message.setText(chat.getMessage());
-            holder.show_message.setVisibility(View.GONE);
+            holder.show_message.setVisibility(View.VISIBLE);
             holder.cardView.setVisibility(View.GONE);
             holder.cardView1.setVisibility(View.GONE);
             holder.RacordView.setVisibility(View.GONE);
@@ -88,7 +88,6 @@ public class MessageAdapter extends RecyclerView.Adapter<MessageAdapter.ViewHold
         }
         else if (chat.getType().equals("image")) {
             holder.show_message.setVisibility(View.GONE);
-            holder.cardView.setVisibility(View.GONE);
             holder.cardView1.setVisibility(View.GONE);
             holder.RacordView.setVisibility(View.GONE);
             holder.videoView.setVisibility(View.GONE);
@@ -99,7 +98,6 @@ public class MessageAdapter extends RecyclerView.Adapter<MessageAdapter.ViewHold
         }else if (chat.getType().equals("Audio")) {
             holder.show_message.setVisibility(View.GONE);
             holder.cardView.setVisibility(View.GONE);
-            holder.cardView1.setVisibility(View.GONE);
             holder.RacordView.setVisibility(View.GONE);
             holder.videoView.setVisibility(View.GONE);
 
@@ -177,6 +175,19 @@ public class MessageAdapter extends RecyclerView.Adapter<MessageAdapter.ViewHold
             holder.RacordView.setVisibility(View.VISIBLE);
             holder.playingRacord.setImageResource(R.drawable.playaudio);
 
+            if (playingPosition == position) {
+                // If it's the playing position, update the UI accordingly
+                if (mediaPlayer.isPlaying()) {
+                    holder.playingRacord.setImageResource(R.drawable.paus);
+
+                } else {
+                    holder.playingRacord.setImageResource(R.drawable.playaudio);
+                }
+            } else {
+                // If it's not the playing position, show the play icon
+                holder.playingRacord.setImageResource(R.drawable.playaudio);
+            }
+
             holder.playingRacord.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View view) {
@@ -206,6 +217,7 @@ public class MessageAdapter extends RecyclerView.Adapter<MessageAdapter.ViewHold
                                 public void onCompletion(MediaPlayer mediaPlayer) {
                                     holder.playingRacord.setImageResource(R.drawable.playaudio);
                                     playingPosition = -1;
+                                    holder.recordtime.setVisibility(View.GONE);
                                 }
                             });
                         } catch (Exception e) {
@@ -225,12 +237,16 @@ public class MessageAdapter extends RecyclerView.Adapter<MessageAdapter.ViewHold
                         String formattedTime = String.format("%d:%02d / %d:%02d", minutes, seconds, totalMinutes, totalSeconds);
 
                         // Update the UI on the main thread
-                        recordTimeTextView.post(() -> recordTimeTextView.setText(formattedTime));
+                        if(playingPosition==position){
+                            /* recordTimeTextView.post(() ->*/ recordTimeTextView.setText(formattedTime);
+                            recordTimeTextView.setVisibility(View.VISIBLE);
+                            recordTimeTextView.postDelayed(() -> updateRecordTime(recordTimeTextView, totalDuration), 1000);
 
-                        // Recursive call to keep updating
-                        recordTimeTextView.postDelayed(() -> updateRecordTime(recordTimeTextView, totalDuration), 1000);
 
-
+                        }else
+                        {
+                            recordTimeTextView.setVisibility(View.GONE);
+                        }
                     }
                 }
             });

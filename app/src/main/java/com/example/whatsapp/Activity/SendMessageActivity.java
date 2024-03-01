@@ -6,11 +6,17 @@ import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 import androidx.core.app.ActivityCompat;
+import androidx.core.app.NotificationCompat;
+import androidx.core.app.NotificationManagerCompat;
 import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+
 import android.Manifest;
 import android.annotation.SuppressLint;
+import android.app.NotificationChannel;
+import android.app.NotificationManager;
+import android.app.PendingIntent;
 import android.app.ProgressDialog;
 import android.content.DialogInterface;
 import android.content.Intent;
@@ -19,23 +25,25 @@ import android.graphics.Bitmap;
 import android.media.MediaPlayer;
 import android.media.MediaRecorder;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
+
 import android.os.CountDownTimer;
 import android.os.Handler;
 import android.provider.MediaStore;
 import android.view.View;
-import android.widget.Button;
 import android.widget.EditText;
-import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
+
 import com.bumptech.glide.Glide;
 import com.example.whatsapp.Adapter.MessageAdapter;
 import com.example.whatsapp.ModelClass.Chat;
 import com.example.whatsapp.ModelClass.User;
 import com.example.whatsapp.R;
+import com.example.whatsapp.Service.FirebaseUtil;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
@@ -50,6 +58,7 @@ import com.google.firebase.database.ValueEventListener;
 import com.google.firebase.storage.FirebaseStorage;
 import com.google.firebase.storage.StorageReference;
 import com.google.firebase.storage.UploadTask;
+
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
@@ -58,19 +67,29 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 
+import org.json.JSONObject;
+
 import de.hdodenhof.circleimageview.CircleImageView;
+import okhttp3.Call;
+import okhttp3.Callback;
+import okhttp3.MediaType;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.RequestBody;
+import okhttp3.Response;
 
 
 public class SendMessageActivity extends AppCompatActivity {
 
-    private static final int REQUEST_READ_EXTERNAL_STORAGE_PERMISSION =1000 ;
+    private static final int REQUEST_READ_EXTERNAL_STORAGE_PERMISSION = 1000;
     private long recordingDurationMillis = 0;
 
 
-
+    String otherUser = "";
+    String userid;
     CircleImageView profile_image;
     TextView username;
-    FirebaseUser fuser;
+    FirebaseUser Login_User;
     DatabaseReference reference;
     ImageView btn_send, media_access;
     EditText text_send;
@@ -80,24 +99,20 @@ public class SendMessageActivity extends AppCompatActivity {
     RecyclerView recyclerView;
     Intent intent;
     ValueEventListener seenListener;
-    TextView racordtiming;
     TextView racordtimingP;
-    String userid;
     MediaPlayer mediaPlayer;
-    LinearLayout linearLayout,R_linearLayout;
+    LinearLayout linearLayout, R_linearLayout;
     TextView imagesending, audiosending, videosending;
     Uri imageuri;
 
 
-    ImageView Recordsend,Recorddelete;
+    ImageView Recordsend, Recorddelete;
 
-    //recorder
+    private static final int RECORD_AUDIO_PERMISSION_REQUEST_CODE = 100;
     private boolean isRecording = false;
     private String audioFilePath = null;
     private MediaRecorder mediaRecorder;
-
     private AlertDialog mediaAlertDialog;
-
     private CountDownTimer countDownTimer;
     private long recordingStartTime;
 
@@ -108,62 +123,56 @@ public class SendMessageActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_send_message);
 
+
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
         getSupportActionBar().setTitle("");
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
         toolbar.setNavigationOnClickListener((view) -> {
             startActivity(new Intent(SendMessageActivity.this, MainActivity.class).setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP));
-
         });
 
-        //share media
         mediaPlayer = new MediaPlayer();
-        //Display Message
         recyclerView = findViewById(R.id.recycler_view);
         recyclerView.setHasFixedSize(true);
         LinearLayoutManager linearLayoutManager = new LinearLayoutManager(getApplicationContext());
         linearLayoutManager.setStackFromEnd(true);
         recyclerView.setLayoutManager(linearLayoutManager);
-
         profile_image = findViewById(R.id.profile_image);
         username = findViewById(R.id.username);
-
-
-        //send message
         btn_send = findViewById(R.id.btn_send);
         text_send = findViewById(R.id.text_send);
-
-        //share media
         media_access = findViewById(R.id.all_file);
-
-
         intent = getIntent();
+
+
         userid = intent.getStringExtra("userid");
-        fuser = FirebaseAuth.getInstance().getCurrentUser();
+        otherUser = intent.getStringExtra("otherUserToken");
 
-        linearLayout= findViewById(R.id.bottomLayout);
-        R_linearLayout=findViewById(R.id.RecordLayout);
 
-        Recordsend=findViewById(R.id.RecordSend);
-        Recorddelete=findViewById(R.id.RecordDelet);
-        racordtimingP=findViewById(R.id.racordtimingP);
+        Login_User = FirebaseAuth.getInstance().getCurrentUser();
+        linearLayout = findViewById(R.id.bottomLayout);
+        R_linearLayout = findViewById(R.id.RecordLayout);
+        Recordsend = findViewById(R.id.RecordSend);
+        Recorddelete = findViewById(R.id.RecordDelet);
+        racordtimingP = findViewById(R.id.racordtimingP);
 
         btn_send.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 String msg = text_send.getText().toString();
                 if (!msg.equals("")) {
-                   sendMessage(fuser.getUid(), userid, msg);
+                    SendMessage(Login_User.getUid(), userid, msg);
                 } else {
                     Toast.makeText(SendMessageActivity.this, "You can't send empty message", Toast.LENGTH_SHORT).show();
                 }
                 text_send.setText("");
+
             }
         });
 
         //recorder
-        recoder=findViewById(R.id.recorder);
+        recoder = findViewById(R.id.recorder);
         recoder.setOnClickListener(v -> {
             if (!isRecording) {
                 if (!isRecording) {
@@ -172,56 +181,38 @@ public class SendMessageActivity extends AppCompatActivity {
                 } else {
                     stopRecording();
                 }
- //               startRecording();
-//                AlertDialog.Builder alert = new AlertDialog.Builder(SendMessageActivity.this);
-//                View myview = getLayoutInflater().inflate(R.layout.recordmenu, null, false);
-//                alert.setView(myview);
-//                tv=myview.findViewById(R.id.racordtimingP);
-//                alert.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
-//                    @Override
-//                    public void onClick(DialogInterface dialog, int which) {
-//                        cancelRecording();
-//                    }
-//                });
-//
-//                alert.setPositiveButton("Send Recording", new DialogInterface.OnClickListener() {
-//                    @Override
-//                    public void onClick(DialogInterface dialog, int which) {
-//                        stopRecording();
-//                    }
-//                });
-//                alert.setOnDismissListener(new DialogInterface.OnDismissListener() {
-//                    @Override
-//                    public void onDismiss(DialogInterface dialogInterface) {
-//                        cancelRecording();
-//                    }
-//                });
-//                alert.show();
-//                countDownTimer.start();
             }
         });
 
-        reference = FirebaseDatabase.getInstance().getReference("Users").child(userid);
+        if (userid != null) {
+            reference = FirebaseDatabase.getInstance().getReference("Users").child(userid);
+            reference.addValueEventListener(new ValueEventListener() {
+                @Override
+                public void onDataChange(@NonNull DataSnapshot snapshot) {
+                    User user = snapshot.getValue(User.class);
+                    if (user != null) {
+                        username.setText(user.getUsername());
 
-        reference.addValueEventListener(new ValueEventListener() {
-            @Override
-            public void onDataChange(@NonNull DataSnapshot snapshot) {
-                User user = snapshot.getValue(User.class);
-                username.setText(user.getUsername());
-
-                if (user.getImageURL().equals("default")) {
-                    profile_image.setImageResource(R.mipmap.ic_launcher);
-                } else {
-                    Glide.with(getApplicationContext()).load(user.getImageURL()).into(profile_image);
+                        if (user.getImageURL().equals("default")) {
+                            profile_image.setImageResource(R.mipmap.ic_launcher);
+                        } else {
+                            Glide.with(getApplicationContext()).load(user.getImageURL()).into(profile_image);
+                        }
+                        readMessage(Login_User.getUid(), userid, user.getImageURL());
+                    }
                 }
-                readMessage(fuser.getUid(), userid, user.getImageURL());
-            }
 
-            @Override
-            public void onCancelled(@NonNull DatabaseError error) {
+                @Override
+                public void onCancelled(@NonNull DatabaseError error) {
 
-            }
-        });
+                }
+            });
+        } else {
+            // Handle the case when userid is null
+        }
+
+
+
         seenMessage(userid);
 
 
@@ -273,31 +264,137 @@ public class SendMessageActivity extends AppCompatActivity {
         });
     }
 
-    private void cancelRecording() {
-        if (mediaRecorder != null) {
-            // Stop recording and release resources
-            mediaRecorder.stop();
-            mediaRecorder.release();
-            mediaRecorder = null;
-            isRecording = false;
-            recoder.setImageResource(R.drawable.voicef);
 
-            if (countDownTimer != null) {
-                countDownTimer.cancel();
+
+
+    private void SendMessage(String sender, String receiver, String message) {
+        DatabaseReference reference = FirebaseDatabase.getInstance().getReference();
+        HashMap<String, Object> hashMap = new HashMap<>();
+        hashMap.put("sender", sender);
+        hashMap.put("receiver", receiver);
+        hashMap.put("message", message);
+        hashMap.put("isseen", false);
+        hashMap.put("type", "text");
+
+        reference.child("Chats").push().setValue(hashMap)
+                .addOnSuccessListener(new OnSuccessListener<Void>() {
+                    @Override
+                    public void onSuccess(Void aVoid) {
+                        sendNotification(message);
+                    }
+                });
+
+    }
+    void sendNotification(String message) {
+        FirebaseUtil.currentUserDetails().addValueEventListener(new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot snapshot) {
+                if (snapshot.exists()) {
+                    User currentUser = snapshot.getValue(User.class);
+                    try {
+                        JSONObject jsonObject = new JSONObject();
+
+                        JSONObject notificationObj = new JSONObject();
+
+                        notificationObj.put("title", currentUser.getUsername());
+                        notificationObj.put("body", message);
+
+                        JSONObject dataObj = new JSONObject();
+                        dataObj.put("userId", FirebaseAuth.getInstance().getCurrentUser().getUid());
+
+                        jsonObject.put("notification", notificationObj);
+                        jsonObject.put("data", dataObj);
+                        jsonObject.put("to", otherUser);
+
+                        callApi(jsonObject);
+                    } catch (Exception e) {
+                        Toast.makeText(SendMessageActivity.this, e.getMessage(), Toast.LENGTH_SHORT).show();
+                    }
+                }
             }
 
-            // Delete the recorded file
-            File file = new File(audioFilePath);
-            if (file.exists()) {
-                file.delete();
+            @Override
+            public void onCancelled(@NonNull DatabaseError error) {
+                Toast.makeText(SendMessageActivity.this, error.getMessage(), Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
+    void callApi(JSONObject jsonObject) {
+        MediaType JSON = MediaType.get("application/json; charset=utf-8");
+        OkHttpClient client = new OkHttpClient();
+        String url = "https://fcm.googleapis.com/fcm/send";
+        RequestBody body = RequestBody.create(jsonObject.toString(), JSON);
+        Request request = new Request.Builder()
+                .url(url)
+                .post(body)
+                .header("Authorization", "Bearer AAAAhfIa1_s:APA91bG-4R12zTq8iwswUHmPbpJOBbfxhUOPmsCpnh05VO8lSYe9vxEXf7SHjYlG9LCn-TamzZ-_r8hEkcl70-NNkithpsb3_QMcO0-TUbMS1KjS9Vah03898Ni9gT8gE2q5wLt4KD9x")
+                .build();
+        client.newCall(request).enqueue(new Callback() {
+            @Override
+            public void onFailure(@NonNull Call call, @NonNull IOException e) {
+                Toast.makeText(SendMessageActivity.this, e.getMessage(), Toast.LENGTH_SHORT).show();
+            }
+            @Override
+            public void onResponse(@NonNull Call call, @NonNull Response response) throws IOException {
+            }
+        });
+
+    }
+    private void seenMessage(final String userid) {
+        reference = FirebaseDatabase.getInstance().getReference("Chats");
+        seenListener = reference.addValueEventListener(new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot snapshot) {
+                for (DataSnapshot dataSnapshot : snapshot.getChildren()) {
+                    Chat chat = dataSnapshot.getValue(Chat.class);
+                    if (chat != null) {
+                        if (chat.getReceiver() != null && chat.getSender() != null) {
+                            if (chat.getReceiver().equals(Login_User.getUid()) && chat.getSender().equals(userid)) {
+                                HashMap<String, Object> hashMap = new HashMap<>();
+                                hashMap.put("isseen", true);
+                                dataSnapshot.getRef().updateChildren(hashMap);
+                            }
+                        }
+                    }
+                }
             }
 
-            Toast.makeText(this, "Recording canceled", Toast.LENGTH_SHORT).show();
-        }
+            @Override
+            public void onCancelled(@NonNull DatabaseError error) {
+
+            }
+        });
+    }
+    private void readMessage(final String myid, final String userid, final String imageurl) {
+        mChat = new ArrayList<>();
+
+        reference = FirebaseDatabase.getInstance().getReference("Chats");
+        reference.addValueEventListener(new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot snapshot) {
+                mChat.clear();
+                for (DataSnapshot dataSnapshot : snapshot.getChildren()) {
+                    Chat chat = dataSnapshot.getValue(Chat.class);
+
+                    if (chat != null && chat.getReceiver() != null && chat.getSender() != null) {
+                        if ((chat.getReceiver().equals(myid) && chat.getSender().equals(userid)) ||
+                                (chat.getReceiver().equals(userid) && chat.getSender().equals(myid))) {
+                            mChat.add(chat);
+                        }
+                        messageAdapter = new MessageAdapter(getApplicationContext(), mChat, imageurl);
+                        recyclerView.setAdapter(messageAdapter);
+                        messageAdapter.notifyDataSetChanged();
+                    }
+                }
+            }
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError error) {
+
+            }
+        });
     }
 
-
-    private static final int RECORD_AUDIO_PERMISSION_REQUEST_CODE = 100;
 
     private void startRecording() {
         linearLayout.setVisibility(View.GONE);
@@ -359,6 +456,7 @@ public class SendMessageActivity extends AppCompatActivity {
                 long elapsedTime = System.currentTimeMillis() - recordingStartTime;
                 updateTimer(elapsedTime);
             }
+
             @Override
             public void onFinish() {
                 // Handle the timer finish if needed
@@ -366,15 +464,28 @@ public class SendMessageActivity extends AppCompatActivity {
         };
         //countDownTimer.start();
     }
-    private void updateTimer(long elapsedTime) {
-        long seconds = elapsedTime / 1000;
-        long minutes = seconds / 60;
-        seconds = seconds % 60;
-        String timeString = String.format(Locale.getDefault(), "%02d:%02d", minutes, seconds);
-        racordtimingP.setText(timeString);
+    private void cancelRecording() {
+        if (mediaRecorder != null) {
+            // Stop recording and release resources
+            mediaRecorder.stop();
+            mediaRecorder.release();
+            mediaRecorder = null;
+            isRecording = false;
+            recoder.setImageResource(R.drawable.voicef);
 
+            if (countDownTimer != null) {
+                countDownTimer.cancel();
+            }
+
+            // Delete the recorded file
+            File file = new File(audioFilePath);
+            if (file.exists()) {
+                file.delete();
+            }
+
+            Toast.makeText(this, "Recording canceled", Toast.LENGTH_SHORT).show();
+        }
     }
-
     private void stopRecording() {
         if (mediaRecorder != null) {
             // Stop recording
@@ -390,7 +501,14 @@ public class SendMessageActivity extends AppCompatActivity {
             uploadAudio();
         }
     }
-/////recording
+    private void updateTimer(long elapsedTime) {
+        long seconds = elapsedTime / 1000;
+        long minutes = seconds / 60;
+        seconds = seconds % 60;
+        String timeString = String.format(Locale.getDefault(), "%02d:%02d", minutes, seconds);
+        racordtimingP.setText(timeString);
+
+    }
     private void uploadAudio() {
 
         ProgressDialog progressDialog = new ProgressDialog(this);
@@ -418,7 +536,7 @@ public class SendMessageActivity extends AppCompatActivity {
                             // Save the audio message in the database
                             DatabaseReference databaseReference1 = FirebaseDatabase.getInstance().getReference();
                             HashMap<String, Object> hashMap = new HashMap<>();
-                            hashMap.put("sender", fuser.getUid());
+                            hashMap.put("sender", Login_User.getUid());
                             hashMap.put("receiver", userid);
                             hashMap.put("message", downloadAudio);
                             hashMap.put("type", "Racord");
@@ -447,47 +565,6 @@ public class SendMessageActivity extends AppCompatActivity {
 
     }
 
-    //seen message
-    private void seenMessage(final String userid) {
-        reference = FirebaseDatabase.getInstance().getReference("Chats");
-        seenListener = reference.addValueEventListener(new ValueEventListener() {
-            @Override
-            public void onDataChange(@NonNull DataSnapshot snapshot) {
-                for (DataSnapshot dataSnapshot : snapshot.getChildren()) {
-                    Chat chat = dataSnapshot.getValue(Chat.class);
-                    if (chat != null) {
-                        if (chat.getReceiver() != null && chat.getSender() != null) {
-                            if (chat.getReceiver().equals(fuser.getUid()) && chat.getSender().equals(userid)) {
-                                HashMap<String, Object> hashMap = new HashMap<>();
-                                hashMap.put("isseen", true);
-                                dataSnapshot.getRef().updateChildren(hashMap);
-                            }
-                        }
-                    }
-                }
-            }
-
-            @Override
-            public void onCancelled(@NonNull DatabaseError error) {
-
-            }
-        });
-    }
-
-    //send message
-    private void sendMessage(String sender, final String receiver, String message) {
-
-        reference = FirebaseDatabase.getInstance().getReference();
-
-        HashMap<String, Object> hashMap = new HashMap<>();
-        hashMap.put("sender", sender);
-        hashMap.put("receiver", receiver);
-        hashMap.put("message", message);
-        hashMap.put("isseen", false);
-        hashMap.put("type", "text");
-
-        reference.child("Chats").push().setValue(hashMap);
-    }
     @Override
     protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
@@ -498,19 +575,19 @@ public class SendMessageActivity extends AppCompatActivity {
 
 
             } catch (IOException e) {
-               // throw new RuntimeException(e);
+                // throw new RuntimeException(e);
                 e.printStackTrace();
             }
-        }else if (requestCode == 1000 && resultCode == RESULT_OK && data != null) {
+        } else if (requestCode == 1000 && resultCode == RESULT_OK && data != null) {
             if (checkReadExternalStoragePermission()) {
                 imageuri = data.getData();
                 if (imageuri != null) {
                     setUploadAudio(imageuri);
                 } else {
 
-                    Toast.makeText(this,  "No audio file selected", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(this, "No audio file selected", Toast.LENGTH_SHORT).show();
                 }
-            }else {
+            } else {
                 // Request the permission
                 requestReadExternalStoragePermission();
             }
@@ -523,31 +600,7 @@ public class SendMessageActivity extends AppCompatActivity {
                 Toast.makeText(this, "No video file selected", Toast.LENGTH_SHORT).show();
             }
         } else {
-            Toast.makeText(this,  "Please select a valid file", Toast.LENGTH_SHORT).show();
-        }
-    }
-
-    private boolean checkReadExternalStoragePermission() {
-        return ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE)
-                == PackageManager.PERMISSION_GRANTED;
-    }
-    private void requestReadExternalStoragePermission() {
-        ActivityCompat.requestPermissions(this,
-                new String[]{Manifest.permission.READ_EXTERNAL_STORAGE},
-                REQUEST_READ_EXTERNAL_STORAGE_PERMISSION);
-    }
-    @Override
-    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-        if (requestCode == REQUEST_READ_EXTERNAL_STORAGE_PERMISSION) {
-            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                // Permission granted, try uploading audio again
-                if (imageuri != null) {
-                    setUploadAudio(imageuri);
-                }
-            } else {
-                Toast.makeText(this, "Permission denied. Cannot upload audio.", Toast.LENGTH_SHORT).show();
-            }
+            Toast.makeText(this, "Please select a valid file", Toast.LENGTH_SHORT).show();
         }
     }
 
@@ -582,7 +635,7 @@ public class SendMessageActivity extends AppCompatActivity {
                                     String downloadurl = task.getResult().toString();
                                     reference = FirebaseDatabase.getInstance().getReference();
                                     HashMap<String, Object> hashMap1 = new HashMap<>();
-                                    hashMap1.put("sender", fuser.getUid());
+                                    hashMap1.put("sender", Login_User.getUid());
                                     hashMap1.put("receiver", userid);
                                     hashMap1.put("message", downloadurl);
                                     hashMap1.put("type", "image");
@@ -596,9 +649,9 @@ public class SendMessageActivity extends AppCompatActivity {
                                             mediaAlertDialog.dismiss();
                                         }
                                     }, 300);
-                                }else {
-                                    Exception exception=task.getException();
-                                    if (exception!=null){
+                                } else {
+                                    Exception exception = task.getException();
+                                    if (exception != null) {
                                         exception.printStackTrace();
                                         Toast.makeText(SendMessageActivity.this, exception.getMessage(), Toast.LENGTH_SHORT).show();
                                     }
@@ -615,6 +668,7 @@ public class SendMessageActivity extends AppCompatActivity {
                     }
                 });
     }
+
     public void setUploadAudio(Uri uri) {
         ProgressDialog progressDialog = new ProgressDialog(this);
         progressDialog.setIcon(R.drawable.audiofile);
@@ -635,9 +689,9 @@ public class SendMessageActivity extends AppCompatActivity {
                 if (uriTask.isSuccessful()) {
 
                     Toast.makeText(SendMessageActivity.this, "Sending a Audio", Toast.LENGTH_SHORT).show();
-                    reference= FirebaseDatabase.getInstance().getReference();
-                    HashMap<String,Object> hashMap = new HashMap<>();
-                    hashMap.put("sender", fuser.getUid());
+                    reference = FirebaseDatabase.getInstance().getReference();
+                    HashMap<String, Object> hashMap = new HashMap<>();
+                    hashMap.put("sender", Login_User.getUid());
                     hashMap.put("receiver", userid);
                     hashMap.put("message", download_audio);
                     hashMap.put("type", "Audio");
@@ -663,7 +717,6 @@ public class SendMessageActivity extends AppCompatActivity {
         });
     }
 
-
     public void setUploadVideo(Uri uri) {
         ProgressDialog progressDialog = new ProgressDialog(SendMessageActivity.this);
         progressDialog.setIcon(R.drawable.video);
@@ -685,7 +738,7 @@ public class SendMessageActivity extends AppCompatActivity {
                     Toast.makeText(SendMessageActivity.this, "Sending a Video", Toast.LENGTH_SHORT).show();
                     DatabaseReference databaseReference1 = FirebaseDatabase.getInstance().getReference();
                     HashMap<String, Object> hashMap = new HashMap<>();
-                    hashMap.put("sender", fuser.getUid());
+                    hashMap.put("sender", Login_User.getUid());
                     hashMap.put("receiver", userid);
                     hashMap.put("message", downloadvideo);
                     hashMap.put("type", "Video");
@@ -710,40 +763,34 @@ public class SendMessageActivity extends AppCompatActivity {
 
     }
 
+    private boolean checkReadExternalStoragePermission() {
+        return ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE)
+                == PackageManager.PERMISSION_GRANTED;
+    }
 
-    //display or read message
-    private void readMessage(final String myid, final String userid, final String imageurl) {
-        mChat = new ArrayList<>();
+    private void requestReadExternalStoragePermission() {
+        ActivityCompat.requestPermissions(this,
+                new String[]{Manifest.permission.READ_EXTERNAL_STORAGE},
+                REQUEST_READ_EXTERNAL_STORAGE_PERMISSION);
+    }
 
-        reference = FirebaseDatabase.getInstance().getReference("Chats");
-        reference.addValueEventListener(new ValueEventListener() {
-            @Override
-            public void onDataChange(@NonNull DataSnapshot snapshot) {
-                mChat.clear();
-                for (DataSnapshot dataSnapshot : snapshot.getChildren()) {
-                    Chat chat = dataSnapshot.getValue(Chat.class);
-
-                    if (chat != null && chat.getReceiver() != null && chat.getSender() != null) {
-                        if ((chat.getReceiver().equals(myid) && chat.getSender().equals(userid)) ||
-                                (chat.getReceiver().equals(userid) && chat.getSender().equals(myid))) {
-                            mChat.add(chat);
-                        }
-                        messageAdapter = new MessageAdapter(getApplicationContext(), mChat, imageurl);
-                        recyclerView.setAdapter(messageAdapter);
-                        messageAdapter.notifyDataSetChanged();
-                    }
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        if (requestCode == REQUEST_READ_EXTERNAL_STORAGE_PERMISSION) {
+            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                // Permission granted, try uploading audio again
+                if (imageuri != null) {
+                    setUploadAudio(imageuri);
                 }
+            } else {
+                Toast.makeText(this, "Permission denied. Cannot upload audio.", Toast.LENGTH_SHORT).show();
             }
-
-            @Override
-            public void onCancelled(@NonNull DatabaseError error) {
-
-            }
-        });
+        }
     }
 
     private void status(String status) {
-        reference = FirebaseDatabase.getInstance().getReference("Users").child(fuser.getUid());
+        reference = FirebaseDatabase.getInstance().getReference("Users").child(Login_User.getUid());
 
         HashMap<String, Object> hashMap = new HashMap<>();
         hashMap.put("status", status);
@@ -763,6 +810,8 @@ public class SendMessageActivity extends AppCompatActivity {
         reference.removeEventListener(seenListener);
         status("offline");
     }
+
+
 }
 
 

@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="@drawable/dialog_bg"
+    android:padding="20dp">
+
+    <LinearLayout
+        android:id="@+id/opencam"
+        android:orientation="horizontal"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:padding="8dp">
+
+
+        <ImageView
+            android:layout_width="35dp"
+            android:layout_height="35dp"
+            android:src="@drawable/ic_baseline_camera_enhance_24"/>
+
+        <TextView
+            android:id="@+id/open_cameratv"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Open Camera"
+            android:textColor="@color/black"
+            android:fontFamily="@font/alice"
+            android:padding="5dp"
+            android:textSize="20sp"/>
+
+    </LinearLayout>
+    <LinearLayout
+        android:id="@+id/opengal"
+        android:orientation="horizontal"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:padding="8dp">
+
+
+        <ImageView
+            android:layout_width="35dp"
+            android:layout_height="35dp"
+            android:src="@drawable/ic_baseline_add_photo_alternate_24"/>
+
+        <TextView
+            android:id="@+id/open_gallerytv"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Open Gallery"
+            android:textColor="@color/black"
+            android:fontFamily="@font/alice"
+            android:padding="5dp"
+            android:textSize="20sp"/>
+    </LinearLayout>
+
+
+
+</LinearLayout>

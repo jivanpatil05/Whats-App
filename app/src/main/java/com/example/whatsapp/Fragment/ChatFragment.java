@@ -1,5 +1,7 @@
 package com.example.whatsapp.Fragment;
 
+import android.annotation.SuppressLint;
+import android.content.Intent;
 import android.os.Bundle;
 
 import androidx.annotation.NonNull;
@@ -10,7 +12,12 @@ import androidx.recyclerview.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Button;
+import android.widget.ImageView;
+import android.widget.Toast;
 
+import com.example.whatsapp.Activity.MainActivity;
+import com.example.whatsapp.Activity.UserActivity;
 import com.example.whatsapp.Adapter.UserAdapter;
 import com.example.whatsapp.ModelClass.Chat;
 import com.example.whatsapp.ModelClass.User;
@@ -33,12 +40,13 @@ public class ChatFragment extends Fragment {
 
     private UserAdapter userAdapter;
     private List<User> mUser;
-
     FirebaseUser fuser;
     DatabaseReference reference;
+    ImageView profile;
 
     private List<String> userList;
 
+    @SuppressLint("MissingInflatedId")
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
 
@@ -55,23 +63,37 @@ public class ChatFragment extends Fragment {
             public void onDataChange(@NonNull DataSnapshot snapshot) {
                 userList.clear();
 
-                for (DataSnapshot dataSnapshot:snapshot.getChildren()){
-                    Chat chat=dataSnapshot.getValue(Chat.class);
+                for (DataSnapshot dataSnapshot : snapshot.getChildren()) {
+                    Chat chat = dataSnapshot.getValue(Chat.class);
 
-                    assert chat != null;
-                    if (chat.getSender().equals(fuser.getUid())){
-                        userList.add(chat.getReceiver());
-                    }
-                    if (chat.getReceiver().equals(fuser.getUid())){
-                        userList.add(chat.getSender());
+                    if (chat != null) {
+                        String sender = chat.getSender();
+                        String receiver = chat.getReceiver();
+
+                        if (sender != null && sender.equals(fuser.getUid())) {
+                            userList.add(receiver);
+                        }
+                        if (receiver != null && receiver.equals(fuser.getUid())) {
+                            userList.add(sender);
+                        }
                     }
                 }
                 readChat();
             }
 
+
             @Override
             public void onCancelled(@NonNull DatabaseError error) {
 
+            }
+        });
+
+        profile=view.findViewById(R.id.profile);
+        profile.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent intent=new Intent(getActivity(), UserActivity.class);
+                startActivity(intent);
             }
         });
 

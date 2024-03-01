@@ -6,7 +6,6 @@ public class Chat {
     private String receiver;
     private String message;
     private boolean isseen;
-
     private String type;
     private String imageUri;
 
@@ -15,7 +14,6 @@ public class Chat {
         this.receiver = receiver;
         this.message = message;
         this.isseen = isseen;
-
         this.type=type;
         this.imageUri = imageUri;
     }

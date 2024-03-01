@@ -22,12 +22,9 @@ public class VideoPlayingActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_video_playing);
-        //Window window = this.getWindow();
-        //window.setStatusBarColor(getColor(R.color.statusbarcolor));
 
         Intent intent = getIntent();
         String uri = intent.getStringExtra("videouri");
-
 
         styledPlayerView = findViewById(R.id.myvideoplayer);
         exoPlayer = new ExoPlayer.Builder(VideoPlayingActivity.this).build();

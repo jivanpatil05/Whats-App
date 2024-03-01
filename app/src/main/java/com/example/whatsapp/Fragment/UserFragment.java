@@ -116,7 +116,6 @@ public class UserFragment extends Fragment {
                         assert user != null;
                         assert firebaseUser != null;
                         if (!user.getId().equals(firebaseUser.getUid())) {
-
                             mUsers.add(user);
 
                         }
