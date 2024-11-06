@@ -245,6 +245,10 @@ public class SendMessageActivity extends AppCompatActivity {
                         Toast.makeText(SendMessageActivity.this, "Opening Audio", Toast.LENGTH_SHORT).show();
                     }
                 });
+
+
+
+
                 videosending.setOnClickListener(new View.OnClickListener() {
                     @Override
                     public void onClick(View view) {
