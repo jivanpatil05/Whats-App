@@ -31,6 +31,7 @@ import android.os.Bundle;
 import android.os.CountDownTimer;
 import android.os.Handler;
 import android.provider.MediaStore;
+import android.util.Log;
 import android.view.View;
 import android.widget.EditText;
 import android.widget.ImageView;
@@ -285,40 +286,6 @@ public class SendMessageActivity extends AppCompatActivity {
                 });
 
     }
-    /*void sendNotification(String message) {
-        FirebaseUtil.currentUserDetails().addValueEventListener(new ValueEventListener() {
-            @Override
-            public void onDataChange(@NonNull DataSnapshot snapshot) {
-                if (snapshot.exists()) {
-                    User currentUser = snapshot.getValue(User.class);
-                    try {
-                        JSONObject jsonObject = new JSONObject();
-
-                        JSONObject notificationObj = new JSONObject();
-
-                        notificationObj.put("title", "currentUser.getUsername()");
-                        notificationObj.put("body", "jivanPatil");
-
-                        JSONObject dataObj = new JSONObject();
-                        dataObj.put("userId", FirebaseAuth.getInstance().getCurrentUser().getUid());
-
-                        jsonObject.put("notification", notificationObj);
-                        jsonObject.put("data", dataObj);
-                        jsonObject.put("to", otherUser);
-
-                        callApi(jsonObject);
-                    } catch (Exception e) {
-                        Toast.makeText(SendMessageActivity.this, e.getMessage(), Toast.LENGTH_SHORT).show();
-                    }
-                }
-            }
-
-            @Override
-            public void onCancelled(@NonNull DatabaseError error) {
-                Toast.makeText(SendMessageActivity.this, error.getMessage(), Toast.LENGTH_SHORT).show();
-            }
-        });
-    }*/
     void sendNotification(String message) {
         FirebaseUtil.currentUserDetails().addValueEventListener(new ValueEventListener() {
             @Override
@@ -330,7 +297,6 @@ public class SendMessageActivity extends AppCompatActivity {
 
                         JSONObject notificationObj = new JSONObject();
 
-                        // Use actual username and message
                         notificationObj.put("title", currentUser.getUsername());
                         notificationObj.put("body", message);
 
@@ -340,6 +306,8 @@ public class SendMessageActivity extends AppCompatActivity {
                         jsonObject.put("notification", notificationObj);
                         jsonObject.put("data", dataObj);
                         jsonObject.put("to", otherUser);
+
+                        Log.d("NotificationPayload", jsonObject.toString()); // Add this log
 
                         callApi(jsonObject);
                     } catch (Exception e) {
@@ -354,7 +322,6 @@ public class SendMessageActivity extends AppCompatActivity {
             }
         });
     }
-
     void callApi(JSONObject jsonObject) {
         MediaType JSON = MediaType.get("application/json; charset=utf-8");
         OkHttpClient client = new OkHttpClient();

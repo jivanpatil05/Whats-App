@@ -31,7 +31,6 @@ import java.util.Random;
 
 public class FirebaseNotificationService extends FirebaseMessagingService {
 
-/*
     @Override
     public void onMessageReceived(@NonNull RemoteMessage remoteMessage) {
 
@@ -206,6 +205,6 @@ public class FirebaseNotificationService extends FirebaseMessagingService {
         NotificationManager manager = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
         manager.notify(new Random().nextInt(85 - 65), builder.build());
 
-    }*/
+    }
 
 }
